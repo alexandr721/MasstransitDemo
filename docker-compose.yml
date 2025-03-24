@@ -1,0 +1,112 @@
+services:
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5  
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "admin"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - usersdb-data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5    
+    networks:
+      - backend
+
+  pgadmin:
+    image: dpage/pgadmin4:9.1
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "snowpro@room2.com"
+      PGADMIN_DEFAULT_PASSWORD: "admib"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - 5050:80
+    restart: unless-stopped
+    networks:
+      - backend
+
+  auth-service:
+    build: 
+      context: .
+      dockerfile: Demo.AuthService/Dockerfile
+    ports:
+      - "5001:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=AuthDb;Username=admin;Password=admin
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__ExchangeName=user-events
+      - RabbitMqSettings__QueueName=user-service-queue
+    networks:
+      - backend
+
+  user-service:
+    build: 
+      context: .
+      dockerfile: Demo.UserService/Dockerfile
+    ports:
+      - "5002:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=UserDb;Username=admin;Password=admin
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__ExchangeName=user-events
+      - RabbitMqSettings__QueueName=user-service-queue
+    networks:
+      - backend
+
+  order-service:
+    build: 
+      context: .
+      dockerfile: Demo.OrderService/Dockerfile
+    ports:
+      - "5003:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=OrderDb;Username=admin;Password=admin
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__ExchangeName=user-events
+      - RabbitMqSettings__QueueName=order-service-queue
+    networks:
+      - backend
+
+volumes:
+  usersdb-data:
+  pgadmin-data:
+  pgdata:
+
+networks:
+  backend:
+    driver: bridge

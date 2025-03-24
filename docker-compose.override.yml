@@ -1,0 +1,18 @@
+services:
+  auth-service:
+    volumes:
+      - ./NuGet.config.docker:/root/.nuget/NuGet.Config
+    environment:
+      - USE_DOCKER_NUGET=true
+
+  user-service:
+    volumes:
+      - ../nuget-packages:/root/.nuget/local-packages:ro
+    environment:
+      - USE_DOCKER_NUGET=true
+
+  order-service:
+    volumes:
+      - ../nuget-packages:/root/.nuget/local-packages:ro
+    environment:
+      - USE_DOCKER_NUGET=true
