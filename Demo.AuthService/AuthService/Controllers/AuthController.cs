@@ -28,8 +28,28 @@ public class AuthController(
         });
         await context.SaveChangesAsync();
         logger.LogInformation($"User {user.UserId} {user.Username} registered successfully.");
+
         await publishEndpoint.Publish(user);
-        logger.LogInformation($"User {user.UserId} {user.Username} published successfully.");
+        var message = new NotificationMessage()
+        {
+            UserId = user.UserId,
+            Username = user.Username,
+            Email = user.Email,
+            CreatedAt = DateTime.Now,
+            IsActive = true,
+            RoleId = 1,
+            RoleName = "User",
+            Message = "User registered successfully",
+            Type = "email"
+        };
+        await publishEndpoint.Publish(message);
+        logger.LogInformation($"Email {user.UserId} {user.Username} published successfully.");
+        message.Type = "sms";
+        await publishEndpoint.Publish(message);
+        logger.LogInformation($"SMS {user.UserId} {user.Username} published successfully.");
+        message.Type = "telegram";
+        await publishEndpoint.Publish(message);
+        logger.LogInformation($"Telegram {user.UserId} {user.Username} published successfully.");
         return Ok($"User {user.UserId} {user.Username} registered successfully.");
     }
     

@@ -15,6 +15,7 @@ builder.Services.Configure<RabbitConfig>(builder.Configuration.GetSection("Rabbi
 builder.Services.AddRabbit();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors();
 
 var app = builder.Build();
 app.UseSwagger();

@@ -102,6 +102,82 @@ services:
     networks:
       - backend
 
+  broker-service:
+    build: 
+      context: .
+      dockerfile: NotificationBroker/Dockerfile
+    ports:
+      - "5007:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+#      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=UserDb;Username=admin;Password=admin
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__ExchangeName=user-events
+      - RabbitMqSettings__QueueName=notification-service-queue
+    networks:
+      - backend
+
+  emailsender-service:
+    build: 
+      context: .
+      dockerfile: NotificationSender/NotificationEmailSender/Dockerfile
+    ports:
+      - "5004:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+#      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=UserDb;Username=admin;Password=admin
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__ExchangeName=user-events
+      - RabbitMqSettings__QueueName=email-exchange
+    networks:
+      - backend
+
+  smssender-service:
+    build: 
+      context: .
+      dockerfile: NotificationSender/NotificationSmsSender/Dockerfile
+    ports:
+      - "5005:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+#      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=UserDb;Username=admin;Password=admin
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__ExchangeName=user-events
+      - RabbitMqSettings__QueueName=sms-exchange
+    networks:
+      - backend
+
+  telegramsender-service:
+    build: 
+      context: .
+      dockerfile: NotificationSender/NotificationTelegramSender/Dockerfile
+    ports:
+      - "5006:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+#      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=UserDb;Username=admin;Password=admin
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__ExchangeName=user-events
+      - RabbitMqSettings__QueueName=telegram-exchange
+    networks:
+      - backend
+
 volumes:
   usersdb-data:
   pgadmin-data:

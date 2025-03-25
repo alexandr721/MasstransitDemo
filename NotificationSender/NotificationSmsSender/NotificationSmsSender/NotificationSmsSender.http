@@ -1,0 +1,6 @@
+@NotificationSmsSender_HostAddress = http://localhost:5244
+
+GET {{NotificationSmsSender_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

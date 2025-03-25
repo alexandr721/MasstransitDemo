@@ -22,10 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Demo.Shared" Version="1.0.0" />
+    <PackageReference Include="Demo.Shared" Version="1.0.28" />
   </ItemGroup>
+
   
-  <!-- Эта строка подключит локальный кэш пакетов -->
   <PropertyGroup>
     <RestoreSources>$(LocalPackages);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>

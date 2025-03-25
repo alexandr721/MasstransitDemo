@@ -1,40 +1,34 @@
-# Этап сборки
+# Stage 1 — Build
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Создаем папку для локальных пакетов
+RUN mkdir -p /packages
 
-# Установка переменных
-ARG ROOT_DIR="Demo.AuthService"
-ARG PROJECT_NAME="AuthService"
-ARG PROJECT_PATH=$ROOT_DIR/$PROJECT_NAME/$PROJECT_NAME.csproj
-ARG USE_DOCKER_NUGET=true
-ENV USE_DOCKER_NUGET=$USE_DOCKER_NUGET
+# Копируем локальные NuGet пакеты
+COPY ./nuget-packages/*.nupkg /packages/
+#RUN ls -la /packages && exit 1
+# Добавляем локальную папку как источник NuGet
+RUN dotnet nuget add source /packages --name local-packages
 
-
-# Копируем весь проект
 WORKDIR /src
+
+ARG ROOT_DIR=Demo.AuthService
+ARG PROJECT_NAME=AuthService
+ARG PROJECT_PATH=$ROOT_DIR/$PROJECT_NAME/$PROJECT_NAME.csproj
+
+# Копируем исходники
 COPY . .
-COPY $ROOT_DIR/NuGet.config.docker $ROOT_DIR/NuGet.config
-COPY nuget-packages/. /root/.nuget/local-packages
 
-# Устанавливаем локальный NuGet source
-RUN dotnet nuget add source /root/.nuget/local-packages --name Local --configfile NuGet.Config || true
+# Восстановление зависимостей
+RUN dotnet restore $PROJECT_PATH \
+    -p:USE_DOCKER_NUGET=true
 
-# Восстановление зависимостей с указанием переменной USE_DOCKER_NUGET
-RUN dotnet restore $PROJECT_PATH -p:USE_DOCKER_NUGET=true
+# Сборка и публикация
+RUN dotnet build $PROJECT_PATH -c Release -o /app/build
+RUN dotnet publish $PROJECT_PATH -c Release -o /app/publish
 
-
-# Сборка
-RUN dotnet build $PROJECT_PATH -c Release -o /app/build -p:USE_DOCKER_NUGET=true
-
-# Публикация
-RUN dotnet publish $PROJECT_PATH -c Release -o /app/publish -p:USE_DOCKER_NUGET=true
-
-# Runtime image
+# Stage 2 — Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Открываем порт (если нужен)
-# EXPOSE 80
-
-# Точка входа
 ENTRYPOINT ["dotnet", "AuthService.dll"]

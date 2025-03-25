@@ -23,6 +23,7 @@ internal static class ServiceCollectionExtensions
                 // Publish in Exchange (Fanout)
                 cfg.Message<UserRegisteredEvent>(e => e.SetEntityName(rabbitConfig.ExchangeName));
                 cfg.Message<UserLoggedOutEvent>(e => e.SetEntityName(rabbitConfig.ExchangeName));
+                cfg.Message<NotificationMessage>(e => e.SetEntityName(rabbitConfig.ExchangeName));
             });
         });
         return services;
